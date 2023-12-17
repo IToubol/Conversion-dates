@@ -50,8 +50,11 @@ with left:
 
             if hodesh:
                 hodesh = hodashim[hodesh]
+                # print(hodesh)
+                # hodesh
 
                 hodesh = ((hodesh-6)%(12+shana.isbissextile)) or 12+shana.isbissextile
+                # hodesh
 
             yamim = {
                 "א":1, "ב":2, "ג":3, "ד":4, "ה":5, "ו":6,
@@ -60,7 +63,13 @@ with left:
                 "יט":19, "כ":20, "כא":21, "כב":22, "כג":23, "כד":24,
                 "כה":25, "כו":26, "כז":27, "כח":28, "כט":29
             }
-            if hodesh in {1,3,5,7,11,13} or (hodesh == 8 and shana.ecart == 2) or (hodesh == 9 and shana.ecart > 0):
+            if hodesh in {
+                1, 5,
+                7-shana.isbissextile,
+                9-shana.isbissextile,
+                11-shana.isbissextile,
+                13-shana.isbissextile
+            } or (hodesh == 2 and shana.ecart == 2) or (hodesh == 3 and shana.ecart > 0):
                 yamim["ל"]=30
 
             yom = col2.selectbox("יום", options=yamim if hodesh else (None,), index=None, placeholder="בחר יום")
