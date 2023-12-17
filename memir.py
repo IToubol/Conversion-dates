@@ -1,272 +1,5 @@
-from __future__ import annotations
 import streamlit as st
-
-
-class Ytaron():
-
-    def __init__(self, jour:int=1, heures:int=12, halakim:int=793)->None:
-        self.jour = jour
-        self.heures = heures
-        self.halakim = halakim
-
-    def __repr__(self)->str:
-        return f"Ytaron{(self.jour, self.heures, self.halakim)}"
-
-    def __add__(self, ytaron:tuple|Ytaron)->Ytaron:
-
-        if isinstance(ytaron,tuple):
-            halakim = self.halakim + ytaron[2]
-            heures = self.heures + ytaron[1] + halakim // 1080
-            jours =  self.jour + ytaron[0] + heures // 24
-            return Ytaron(jours%7, heures%24, halakim%1080)
-
-        elif isinstance(ytaron,Ytaron):
-            halakim = ytaron.halakim + self.halakim
-            heures = ytaron.heures + self.heures + halakim // 1080
-            jours = ytaron.jour + self.jour + heures // 24
-            return Ytaron(jours%7, heures%24, halakim%1080)
-
-    def __mul__(self, nombre:int)->Ytaron:
-
-        halakim = self.halakim * nombre
-        heures = self.heures*nombre + halakim//1080
-        return Ytaron((self.jour*nombre + heures//24) % 7, heures % 24, halakim % 1080)
-
-
-MAHZOR_CUMULS = ((0,0,0),(4,8,876),(1,17,672),(0,15,181),(4,23,1057),
-                     (2,8,853),(1,6,362),(5,15,158),(4,12,747),(1,21,543),
-                     (6,6,339),(5,3,928),(2,12,724),(6,21,520),(5,19,29),
-                     (3,3,905),(0,12,701),(6,10,210),(3,19,6))
-
-HODASHIM_EZRAHIIM = ('ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר')
-
-
-# WEEK_DAYS = ('Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi')
-WEEK_DAYS = ('ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת')
-
-class Chana():
-
-    def __init__(self, chana:int)->None:
-
-        rang = chana % 19 or 19
-
-        # self.bissextile:
-        self.bissextile = rang in {3,6,8,11,14,17,19}
-
-        # self.molad:
-        cycles = chana // 19 + (rang < 19) -1
-        molad = Ytaron(2,16,595)*(cycles) + MAHZOR_CUMULS[rang-1] + (2,5,204)
-        self.molad = (molad.jour, molad.heures, molad.halakim)
-
-        # self.ecart:
-        roch, heures, halakim = self.molad
-        if heures > 17 or \
-        (not self.bissextile and roch == 3 and heures*1080 + halakim > 9923) or \
-        (rang in {1,4,7,9,12,15,18} and roch == 2 and heures*1080 + halakim > 16788):
-            roch += 1
-        roch += roch in {1,4,6}
-        next = Ytaron(self.molad[0], heures, halakim) + ((4,8,876),(5,21,589))[self.bissextile]
-        sof, heures, halakim = next.jour, next.heures, next.halakim
-        if heures > 17 or \
-        (rang in {1,3,4,6,8,9,11,12,14,15,17,19} and sof == 3 and heures*1080 + halakim > 9923) or \
-        (self.bissextile and sof == 2 and heures*1080 + halakim > 16788):
-            sof += 1
-        sof += sof in {1,4,6}
-        self.ecart = (sof - roch - 3 - self.bissextile*2) % 7
-
-
-class Taarikh():
-
-    def __init__(self, jour:int, hodashim:int, annee:int)->None:
-        self.jour = jour
-        self.hodashim = hodashim
-        self.annee = annee
-
-    def jourDeLaSemaine(self)->str:
-        jours = taarikh_yamim(self)
-        return WEEK_DAYS[jours % 7]
-
-    def __add__(self, nombre:int)->Taarikh:
-        return yamim_taarikh(taarikh_yamim(self) + nombre)
-
-    def __sub__(self, jours):
-        if isinstance(jours, int):
-            return yamim_taarikh(taarikh_yamim(self) - jours)
-        if isinstance(jours, tuple) or isinstance(jours, Taarikh):
-            return taarikh_yamim(self) - taarikh_yamim(jours)
-
-    def __repr__(self)->str:
-        chana = Chana(self.annee)
-        adar = ('אדר','אדר א')[chana.bissextile]
-        # adar = ('Adar','Adar_A')[chana.bissextile]
-
-        moisAnnee = ['תשרי','חשוון','כסלו','טבת','שבט',adar,'ניסן','אייר','סיון','תמוז','אב','אלול']
-        if chana.bissextile: moisAnnee.insert(6,'אדר ב')
-        # moisAnnee = ['Tishri','Heshvan','Kislev','Tevet','Chevat',adar,'Nissan','Iyar','Sivan','Tamouz','Av','Eloul']
-        # if chana.bissextile: moisAnnee.insert(6,'Adar_B')
-
-        return f"{self.jourDeLaSemaine()} {self.jour} {moisAnnee[self.hodashim-1]} {self.annee}"
-
-    def __eq__(self, other:object)->bool:
-        if isinstance(other, tuple):
-            jour, hodashim, annee = other
-        elif isinstance(other, Taarikh):
-            jour, hodashim, annee = other.jour, other.hodashim, other.annee
-        else:
-            return NotImplemented
-        return self.jour==jour and self.hodashim==hodashim and self.annee==annee
-
-    def __lt__(self, other:object)->bool:
-        if isinstance(other, tuple):
-            jour, hodashim, annee = other
-        elif isinstance(other, Taarikh):
-            jour, hodashim, annee = other.jour, other.hodashim, other.annee
-        if self.annee != annee:
-            return self.annee < annee
-        if self.hodashim != hodashim:
-            return self.hodashim < hodashim
-        return self.jour < jour
-
-    def __gt__(self, other:object)->bool:
-        return other < self
-
-
-def taarikh_yamim(taarikh:object)->int:
-
-    if isinstance(taarikh,Taarikh):
-        jours,hodashim,annee = taarikh.jour, taarikh.hodashim, taarikh.annee
-    elif isinstance(taarikh,tuple):
-        jours,hodashim,annee = taarikh
-    chana = Chana(annee)
-    heshvan = chana.ecart == 2
-    kislev = chana.ecart > 0
-    hk = heshvan + kislev
-    hkb = hk + chana.bissextile
-
-    cumuls = (0, 30, 59+heshvan, 88+hk, 117+hk, 147+hk, 176+hkb, 206+hk, 235+hkb, 265+hk, 294+hkb, 324+hk, 353+hkb)
-    jours += cumuls[hodashim-1]
-
-    while annee > 1:
-        annee -= 1
-        chana = Chana(annee)
-        jours += 353 + chana.ecart + chana.bissextile*2*3*5
-
-    return jours
-
-
-def yamim_taarikh(jours:int)->Taarikh:
-
-    if jours > 0:
-        annee = 1
-        chana = Chana(annee)
-        longueur = 353 + chana.ecart + chana.bissextile*2*3*5
-
-        while jours >= longueur:
-            jours -= longueur
-            annee += 1
-            chana = Chana(annee)
-            longueur = 353 + chana.ecart + chana.bissextile*2*3*5
-
-        if not jours:
-            annee -= 1
-            bissextile = annee % 19 in {0,3,6,8,11,14,17}
-            return Taarikh(29, 12+bissextile, annee)
-
-        B = chana.bissextile
-
-        cumuls = (30, 29+(chana.ecart==2),
-                  29+(chana.ecart>0), 29,
-                  30, 29+B, 30-B, 29+B, 30-B,
-                  29+B, 30-B, 29+B, 29)
-
-        hodashim = 0
-        while jours > cumuls[hodashim]:
-            jours -= cumuls[hodashim]
-            hodashim += 1
-
-        return Taarikh(jours, hodashim+1, annee)
-
-
-def jours_date(jours:int)->tuple:
-    "Convertit un nombre de jours en une date civile."
-
-    if not isinstance(jours,int):
-        return NotImplemented
-
-    jour = WEEK_DAYS[jours%7]
-
-    quadrisiecles = jours//146097
-
-    jours %= 146097
-    siecles = jours//36524
-
-    jours %= 36524
-    if siecles == 4:
-        siecles == 3
-        jours == 36524
-    quadriennats = jours//1461
-
-    jours %= 1461
-    ans = jours//365
-
-    jours %= 365
-    if ans == 4:
-        ans = 3
-        jours = 365
-
-    if not jours:
-        return jour, 31, 12, quadrisiecles*400 + siecles*100 + quadriennats*4 + ans
-
-    ans += 1
-
-    cumuls = (31, 28+(0 if ans % 4 or (quadriennats == 24 and siecles % 4) else 1), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
-    hodashim = 0
-    while jours > cumuls[hodashim]:
-        jours -= cumuls[hodashim]
-        hodashim += 1
-
-    return jour, jours, hodashim+1, quadrisiecles*400 + siecles*100 + quadriennats*4 + ans
-
-
-def date_jours(date:tuple)->int:
-    """
-    Convertit une date civile en un nombre de jours
-    (depuis le 01/01/0001 du calendrier civil Géorgien).
-    """
-    jours,hodashim,annee = date
-
-    annees = annee - 1
-    jours += (annees // 400) * 146097
-
-    annees %= 400
-    jours += (annees // 100) * 36524
-
-    annees %= 100
-    jours += (annees // 4) * 1461
-
-    annees %= 4
-    jours += annees*365
-
-    d = 0 if annee % 4 else 1
-    cumuls = (0, 31, d+59, d+90, d+120, d+151, d+181, d+212, d+243, d+273, d+304, d+334)
-
-    return jours + cumuls[hodashim-1]
-
-
-def convertHC(date:object)->str:
-
-    jour, jours, hodashim, annee = jours_date(taarikh_yamim(date)-1373428)
-    # hodashim = ('Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Aout','Septembre','Octobre','Novembre','Décembre')[hodashim-1]
-    hodashim = HODASHIM_EZRAHIIM[hodashim-1]
-    return f"{jour} {jours} {hodashim} {annee}"
-
-
-def convertCH(date:tuple)->Taarikh:
-    return yamim_taarikh(date_jours(date) + 1373428)
-
-
-
-
+from calendarcomputing import Chana, Taarikh, convertCH, convertHC
 
 st.write("""
          <center>
@@ -297,27 +30,28 @@ with left:
 
     hodashim = {
         "ניסן":1, "אייר":2, "סיון":3, "תמוז":4,
-        "אב":6, "אלול":6, "תשרי":7, "חשוון":8,
+        "אב":5, "אלול":6, "תשרי":7, "חשוון":8,
         "כסלו":9, "טבת":10, "שבט":11,
     }
 
-
     chana = st.text_input("שנה עברית")
     if chana:
+        chana = chana.strip()
         if chana.isdigit():
             chana = int(chana)
             shana = Chana(chana)
-            hodashim[f"אדר{' א' if shana.bissextile else ''}"]=12
-            if shana.bissextile:
-                hodashim['אדר ב']=13
+            hodashim[f"אדר{'-א' if shana.isbissextile else ''}"]=12
+            if shana.isbissextile:
+                hodashim['אדר-ב']=13
 
             col2, col1 = st.columns(2)
 
             hodesh = col1.selectbox("חודש עברי", options=hodashim, index=None, placeholder="בחר חודש", key='hodesh')
-            # print(hodesh)
 
             if hodesh:
                 hodesh = hodashim[hodesh]
+
+                hodesh = ((hodesh-6)%(12+shana.isbissextile)) or 12+shana.isbissextile
 
             yamim = {
                 "א":1, "ב":2, "ג":3, "ד":4, "ה":5, "ו":6,
@@ -326,17 +60,17 @@ with left:
                 "יט":19, "כ":20, "כא":21, "כב":22, "כג":23, "כד":24,
                 "כה":25, "כו":26, "כז":27, "כח":28, "כט":29
             }
-            if hodesh in {1,3,5,7,11,13} or (hodesh == 8 and shana.ecart > 0) or (hodesh == 9 and shana.ecart == 2):
+            if hodesh in {1,3,5,7,11,13} or (hodesh == 8 and shana.ecart == 2) or (hodesh == 9 and shana.ecart > 0):
                 yamim["ל"]=30
 
             yom = col2.selectbox("יום", options=yamim if hodesh else (None,), index=None, placeholder="בחר יום")
 
             if yom:
                 yom = yamim[yom]
-                taarikh = Taarikh(yom, (hodesh-6)%(12+shana.bissextile), chana)
+                taarikh = Taarikh(yom, hodesh, chana)
                 date = convertHC(taarikh).split()
 
-            if st.button("המרה", use_container_width=True, key = "hebrew_to_citizen"):
+            if st.button("המרה", use_container_width=True, key = "hebrew_to_civil"):
                 if hodesh and yom:
                     st.write(f"<h4><center><font color='#E08070'>{date[0]} :  {date[1]} \ {date[2]} \ {date[3]}<font/></center></h4>", unsafe_allow_html=True)
                     st.text(f"{date[1]}.{months[date[2]]}.{date[3]}")
@@ -362,6 +96,9 @@ with right:
     year = st.text_input("שנה לועזית")
 
     if year:
+
+        year = year.strip()
+
         if year.isdigit():
 
             year = int(year)
@@ -381,13 +118,18 @@ with right:
 
             if month and day:
                 date = convertCH((day, month, year))
+                # print("éléments de date:", date.year, date.month, date.day)
                 convert_date = date.__str__().split()
+                # print("convert date:", convert_date)
                 convert_date[1] = days[convert_date[1]]
 
-            if st.button("המרה", use_container_width=True, key = "citizen_to_hebrew"):
+            if st.button("המרה", use_container_width=True, key = "civil_to_hebrew"):
                 if month and day:
+                    isbissextile = Chana(date.year).isbissextile
+                    digital_month = (date.month-6-isbissextile) % (12+isbissextile)
+                    digital_month = digital_month or 12+isbissextile
                     st.write(f"<h4><center><font color='#57DFA3'>{convert_date[0]} :  {convert_date[1]} \ {convert_date[2]} \ {convert_date[3]}<font/></center></h4>", unsafe_allow_html=True)
-                    st.text(f"{date.jour}.{(date.hodashim-6)%(12+Chana(date.annee).bissextile)}.{date.annee}")
+                    st.text(f"{date.day}.{digital_month}.{date.year}")
                 else:
                     st.text(f"השנה הלועזית {year}\nרוכבת על שתי השנים\n{year+3760}|{year+3761} העבריות")
         else:
