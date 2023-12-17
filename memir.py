@@ -387,7 +387,7 @@ with right:
             if st.button("המרה", use_container_width=True, key = "citizen_to_hebrew"):
                 if month and day:
                     st.write(f"<h4><center><font color='#57DFA3'>{convert_date[0]} :  {convert_date[1]} \ {convert_date[2]} \ {convert_date[3]}<font/></center></h4>", unsafe_allow_html=True)
-                    st.text(f"{date.jour}.{date.hodashim}.{date.annee}")
+                    st.text(f"{date.jour}.{(date.hodashim-6)%(12+Chana(date.annee).bissextile)}.{date.annee}")
                 else:
                     st.text(f"השנה הלועזית {year}\nרוכבת על שתי השנים\n{year+3760}|{year+3761} העבריות")
         else:
