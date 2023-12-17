@@ -33,11 +33,16 @@ class Ytaron():
         return Ytaron((self.jour*nombre + heures//24) % 7, heures % 24, halakim % 1080)
 
 
-cumulYtaronAnnees = ((0,0,0),(4,8,876),(1,17,672),(0,15,181),(4,23,1057),
+MAHZOR_CUMULS = ((0,0,0),(4,8,876),(1,17,672),(0,15,181),(4,23,1057),
                      (2,8,853),(1,6,362),(5,15,158),(4,12,747),(1,21,543),
                      (6,6,339),(5,3,928),(2,12,724),(6,21,520),(5,19,29),
                      (3,3,905),(0,12,701),(6,10,210),(3,19,6))
 
+HODASHIM_EZRAHIIM = ('ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר')
+
+
+# WEEK_DAYS = ('Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi')
+WEEK_DAYS = ('ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת')
 
 class Chana():
 
@@ -50,7 +55,7 @@ class Chana():
 
         # self.molad:
         cycles = chana // 19 + (rang < 19) -1
-        molad = Ytaron(2,16,595)*(cycles) + cumulYtaronAnnees[rang-1] + (2,5,204)
+        molad = Ytaron(2,16,595)*(cycles) + MAHZOR_CUMULS[rang-1] + (2,5,204)
         self.molad = (molad.jour, molad.heures, molad.halakim)
 
         # self.ecart:
@@ -70,10 +75,6 @@ class Chana():
         self.ecart = (sof - roch - 3 - self.bissextile*2) % 7
 
 
-# SEMAINE = ('Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi')
-SEMAINE = ('ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת')
-
-
 class Taarikh():
 
     def __init__(self, jour:int, hodashim:int, annee:int)->None:
@@ -83,7 +84,7 @@ class Taarikh():
 
     def jourDeLaSemaine(self)->str:
         jours = taarikh_yamim(self)
-        return SEMAINE[jours % 7]
+        return WEEK_DAYS[jours % 7]
 
     def __add__(self, nombre:int)->Taarikh:
         return yamim_taarikh(taarikh_yamim(self) + nombre)
@@ -99,12 +100,12 @@ class Taarikh():
         adar = ('אדר','אדר א')[chana.bissextile]
         # adar = ('Adar','Adar_A')[chana.bissextile]
 
-        moisHebraiques = ['תשרי','חשוון','כסלו','טבת','שבט',adar,'ניסן','אייר','סיון','תמוז','אב','אלול']
-        if chana.bissextile: moisHebraiques.insert(6,'אדר ב')
-        # moisHebraiques = ['Tishri','Heshvan','Kislev','Tevet','Chevat',adar,'Nissan','Iyar','Sivan','Tamouz','Av','Eloul']
-        # if chana.bissextile: moisHebraiques.insert(6,'Adar_B')
+        moisAnnee = ['תשרי','חשוון','כסלו','טבת','שבט',adar,'ניסן','אייר','סיון','תמוז','אב','אלול']
+        if chana.bissextile: moisAnnee.insert(6,'אדר ב')
+        # moisAnnee = ['Tishri','Heshvan','Kislev','Tevet','Chevat',adar,'Nissan','Iyar','Sivan','Tamouz','Av','Eloul']
+        # if chana.bissextile: moisAnnee.insert(6,'Adar_B')
 
-        return f"{self.jourDeLaSemaine()}   {self.jour}   {moisHebraiques[self.hodashim-1]}   {self.annee}"
+        return f"{self.jourDeLaSemaine()} {self.jour} {moisAnnee[self.hodashim-1]} {self.annee}"
 
     def __eq__(self, other:object)->bool:
         if isinstance(other, tuple):
@@ -173,7 +174,10 @@ def yamim_taarikh(jours:int)->Taarikh:
 
         B = chana.bissextile
 
-        cumuls = (30, 29+(chana.ecart==2), 29+(chana.ecart>0), 29, 30, 29+B, 30-B, 29+B, 30-B, 29+B, 30-B, 29+B, 29)
+        cumuls = (30, 29+(chana.ecart==2),
+                  29+(chana.ecart>0), 29,
+                  30, 29+B, 30-B, 29+B, 30-B,
+                  29+B, 30-B, 29+B, 29)
 
         hodashim = 0
         while jours > cumuls[hodashim]:
@@ -189,7 +193,7 @@ def jours_date(jours:int)->tuple:
     if not isinstance(jours,int):
         return NotImplemented
 
-    jour = SEMAINE[jours%7]
+    jour = WEEK_DAYS[jours%7]
 
     quadrisiecles = jours//146097
 
@@ -253,13 +257,12 @@ def convertHC(date:object)->str:
 
     jour, jours, hodashim, annee = jours_date(taarikh_yamim(date)-1373428)
     # hodashim = ('Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Aout','Septembre','Octobre','Novembre','Décembre')[hodashim-1]
-    hodashim = ('ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר')[hodashim-1]
+    hodashim = HODASHIM_EZRAHIIM[hodashim-1]
     return f"{jour} {jours} {hodashim} {annee}"
 
 
 def convertCH(date:tuple)->Taarikh:
     return yamim_taarikh(date_jours(date) + 1373428)
-
 
 
 
@@ -278,37 +281,43 @@ st.write("""
 
 c1, c2, c3 = st.columns(3)
 with c1: st.write("")
-# with c2: st.image('Molad.jpeg')
-# with c2: st.image('Symbolique.jpeg')
 with c2: st.image('Soleil & Lune.jpeg')
 with c3: st.write("")
 
-st.write("</br>", unsafe_allow_html=True)
+months = {
+    "ינואר":1, "פברואר":2, "מרץ":3, "אפריל":4,
+    "מאי":5, "יוני":6, "יולי":7, "אוגוסט":8,
+    "ספטמבר":9, "אוקטובר":10, "נובמבר":11, "דצמבר":12
+}
 
-left, _, right = st.columns((20,1,20))
+left, middle, right = st.columns((6,2,6))
 
-with right:
+with left:
     st.write("<center><h5><font color=#D06070>מעברי ללועזי</font></h5><center/>", unsafe_allow_html=True)
 
-    col1, col2, col3  = st.columns(3)
+    hodashim = {
+        "ניסן":1, "אייר":2, "סיון":3, "תמוז":4,
+        "אב":6, "אלול":6, "תשרי":7, "חשוון":8,
+        "כסלו":9, "טבת":10, "שבט":11,
+    }
 
-    chana = col1.text_input("שנה עברית")
-    if chana.isdigit():
-        chana = int(chana)
-        shana = Chana(chana)
-        hodashim = {
-                    "ניסן":1, "אייר":2, "סיון":3, "תמוז":4,
-                    "אב":6, "אלול":6, "תשרי":7, "חשוון":8,
-                    "כסלו":9, "טבת":10, "שבט":11,
-                    f"אדר{' א' if shana.bissextile else ''}":12,
-        }
-        if shana.bissextile:
-            hodashim['אדר ב']=13
 
-        hodesh = col2.selectbox("חודש עברי", options=hodashim, index=None, placeholder="בחר חודש")
+    chana = st.text_input("שנה עברית")
+    if chana:
+        if chana.isdigit():
+            chana = int(chana)
+            shana = Chana(chana)
+            hodashim[f"אדר{' א' if shana.bissextile else ''}"]=12
+            if shana.bissextile:
+                hodashim['אדר ב']=13
 
-        if hodesh:
-            hodesh = hodashim[hodesh]
+            col2, col1 = st.columns(2)
+
+            hodesh = col1.selectbox("חודש עברי", options=hodashim, index=None, placeholder="בחר חודש", key='hodesh')
+            # print(hodesh)
+
+            if hodesh:
+                hodesh = hodashim[hodesh]
 
             yamim = {
                 "א":1, "ב":2, "ג":3, "ד":4, "ה":5, "ו":6,
@@ -320,46 +329,66 @@ with right:
             if hodesh in {1,3,5,7,11,13} or (hodesh == 8 and shana.ecart > 0) or (hodesh == 9 and shana.ecart == 2):
                 yamim["ל"]=30
 
-            yom = col3.selectbox("יום", options=yamim, index=None, placeholder="בחר יום")
+            yom = col2.selectbox("יום", options=yamim if hodesh else (None,), index=None, placeholder="בחר יום")
 
             if yom:
                 yom = yamim[yom]
                 taarikh = Taarikh(yom, (hodesh-6)%(12+shana.bissextile), chana)
-                date = convertHC(taarikh)
-                st.write(f"<h4><center><font color='#E08070'>יום {date}<font/></center></h4>", unsafe_allow_html=True)
+                date = convertHC(taarikh).split()
 
+            if st.button("המרה", use_container_width=True, key = "hebrew_to_citizen"):
+                if hodesh and yom:
+                    st.write(f"<h4><center><font color='#E08070'>{date[0]} :  {date[1]} \ {date[2]} \ {date[3]}<font/></center></h4>", unsafe_allow_html=True)
+                    st.text(f"{date[1]}.{months[date[2]]}.{date[3]}")
+                else:
+                    st.text(f"השנה העברית {chana}\nרוכבת על שתי השנים\n{chana-3761}|{chana-3760} הלועזיות")
+        else:
+            st.warning("ציון שנה במספר דיגיטלי בלבד")
 
-with left:
+middle.write("")
+
+with right:
+
+    days = {
+        '1':'א',  '2':'ב',  '3':'ג',  '4':'ד',  '5':'ה',  '6':'ו',
+        '7':'ז',  '8':'ח',  '9':'ט',  '10':'י',  '11':'יא',  '12':'יב',
+        '13':'יג',  '14':'יד',  '15':'טו',  '16':'טז',  '17':'יז',  '18':'יח',
+        '19':'יט', '20':'כ',  '21':'כא',  '22':'כב',  '23':'כג',  '24':'כד',
+        '25':'כה',  '26':'כו',  '27':'כז',  '28':'כח',  '29':'כט',  '30':'ל'
+    }
+
     st.write("<center><h5><font color='#579F83'>מלועזי לעברי</font></h5><center/>", unsafe_allow_html=True)
 
-    col1, col2, col3  = st.columns(3)
+    year = st.text_input("שנה לועזית")
 
-    year = col3.text_input("שנה לועזית")
-    if year.isdigit():
-        year = int(year)
-        # bissextile = (year % 4==0 and year % 100 != 0) or (year % 400 == 0)
-        months = {
-            "ינואר":1, "פברואר":2, "מרץ":3, "אפריל":4,
-            "מאי":5, "יוני":6, "יולי":7, "אוגוסט":8,
-            "ספטמבר":9, "אוקטובר":10, "נובמבר":11, "דצמבר":12
-        }
-        month = col2.selectbox("חודש לועזי", options=months, index=None, placeholder="בחר חודש")
-        if month:
-            month = months[month]
-            last_day = 30 + (month in {1,3,5,7,8,10,12})
-            if month == 2 and (year % 4 or (year % 100 == 0 and year % 400)):
-                last_day -= 2
-            day = col1.selectbox("תאריך", options=range(1, last_day+1), index=None, placeholder="בחר יום")
-            if day:
-                date = (day, month, year)
-                date = convertCH(date).__str__().split()
-                jours = {'1':'א',  '2':'ב',  '3':'ג',  '4':'ד',  '5':'ה',  '6':'ו',
-             '7':'ז',  '8':'ח',  '9':'ט',  '10':'י',  '11':'יא',  '12':'יב',
-             '13':'יג',  '14':'יד',  '15':'טו',  '16':'טז',  '17':'יז',  '18':'יח',
-             '19':'יט', '20':'כ',  '21':'כא',  '22':'כב',  '23':'כג',  '24':'כד',
-             '25':'כה',  '26':'כו',  '27':'כז',  '28':'כח',  '29':'כט',  '30':'ל'}
+    if year:
+        if year.isdigit():
 
+            year = int(year)
 
-                date[1] = jours[date[1]]
+            col2, col1  = st.columns(2)
 
-                st.write(f"<h4><center><font color='#57DFA3'>יום {' '.join(date)}<font/></center></h4>", unsafe_allow_html=True)
+            month = col2.selectbox("חודש לועזי", options=months, index=None, placeholder="בחר חודש")
+
+            days_options = (None,)
+            if month:
+                month = months[month]
+                last_day = 30 + (month in {1,3,5,7,8,10,12})
+                if month == 2:
+                    last_day -= 1 + (year % 4 or (year % 100 == 0 and year % 400))
+                days_options = range(1, last_day+1)
+            day = col1.selectbox("תאריך", options=days_options, index=None, placeholder="בחר יום")
+
+            if month and day:
+                date = convertCH((day, month, year))
+                convert_date = date.__str__().split()
+                convert_date[1] = days[convert_date[1]]
+
+            if st.button("המרה", use_container_width=True, key = "citizen_to_hebrew"):
+                if month and day:
+                    st.write(f"<h4><center><font color='#57DFA3'>{convert_date[0]} :  {convert_date[1]} \ {convert_date[2]} \ {convert_date[3]}<font/></center></h4>", unsafe_allow_html=True)
+                    st.text(f"{date.jour}.{date.hodashim}.{date.annee}")
+                else:
+                    st.text(f"השנה הלועזית {year}\nרוכבת על שתי השנים\n{year+3760}|{year+3761} העבריות")
+        else:
+            st.warning("ציון השנה במספר דיגיטלי בלבד")
