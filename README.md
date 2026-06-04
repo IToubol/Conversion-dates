@@ -15,9 +15,10 @@ A bilingual (Hebrew/Civil) date conversion tool with a Streamlit web interface.
 - Streamlit
 
 ## Project Structure
-├── calendarcomputing.py  # Core calendar logic (Hebrew calendar algorithms)
-└── memir.py              # Streamlit web interface
-
+```
+├─ calendarcomputing.py  # Core calendar logic (Hebrew calendar algorithms)
+└─ memir.py              # Streamlit web interface
+```
 ## Run locally
 
 ```bash
