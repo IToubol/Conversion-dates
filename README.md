@@ -1,4 +1,4 @@
-# ממיר תאריכים | Hebrew Date Converter
+# Hebrew Date Converter | ממיר תאריכים
 
 A bilingual (Hebrew/Civil) date conversion tool with a Streamlit web interface.
 
@@ -8,6 +8,11 @@ A bilingual (Hebrew/Civil) date conversion tool with a Streamlit web interface.
 - Convert Gregorian dates to Hebrew dates
 - Handles leap years (שנה מעוברת), variable month lengths (Heshvan/Kislev)
 - Interface in Hebrew
+
+<picture>
+  <source srcset="./Screenshot Converter Interface.png" type="image/png">
+  <img src="./Screenshot Converter Interface.png" alt="Description">
+</picture>
 
 ## Stack
 
