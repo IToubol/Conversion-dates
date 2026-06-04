@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 class Ytaron():
-
     def __init__(self, jour:int=1, heures:int=12, halakim:int=793)->None:
         self.day = jour
         self.heures = heures
@@ -11,7 +10,6 @@ class Ytaron():
         return f"Ytaron{(self.day, self.heures, self.halakim)}"
 
     def __add__(self, ytaron:tuple|Ytaron)->Ytaron:
-
         if isinstance(ytaron,tuple):
             halakim = self.halakim + ytaron[2]
             heures = self.heures + ytaron[1] + halakim // 1080
@@ -25,7 +23,6 @@ class Ytaron():
             return Ytaron(jours%7, heures%24, halakim%1080)
 
     def __mul__(self, nombre:int)->Ytaron:
-
         halakim = self.halakim * nombre
         heures = self.heures*nombre + halakim//1080
         return Ytaron((self.day*nombre + heures//24) % 7, heures % 24, halakim % 1080)
@@ -39,44 +36,48 @@ MAHZOR_CUMULS = (
 )
 
 HODASHIM_EZRAHIIM = ('ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר')
-
-
 # WEEK_DAYS = ('Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi')
 WEEK_DAYS = ('ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת')
 
-class Chana():
 
+class Chana():
     def __init__(self, chana:int)->None:
 
         rang = chana % 19 or 19
 
-        # self.isbissextile:
+        # self.isbissextile
         self.isbissextile = rang in {3,6,8,11,14,17,19}
 
-        # self.molad:
+        # self.molad
         cycles = chana // 19 + (rang < 19) -1
         molad = Ytaron(2,16,595)*(cycles) + MAHZOR_CUMULS[rang-1] + (2,5,204)
         self.molad = (molad.day, molad.heures, molad.halakim)
 
-        # self.ecart:
+        # self.ecart
         roch, heures, halakim = self.molad
-        if heures > 17 or \
-        (not self.isbissextile and roch == 3 and heures*1080 + halakim > 9923) or \
-        (rang in {1,4,7,9,12,15,18} and roch == 2 and heures*1080 + halakim > 16788):
+
+        if heures > 17                                                                     \
+        or (not self.isbissextile and roch == 3 and heures*1080 + halakim > 9923)          \
+        or (rang in {1,4,7,9,12,15,18} and roch == 2 and heures*1080 + halakim > 16788):
             roch += 1
+
         roch += roch in {1,4,6}
+
         next = Ytaron(self.molad[0], heures, halakim) + ((4,8,876),(5,21,589))[self.isbissextile]
+
         sof, heures, halakim = next.day, next.heures, next.halakim
-        if heures > 17 or \
-        (rang in {1,3,4,6,8,9,11,12,14,15,17,19} and sof == 3 and heures*1080 + halakim > 9923) or \
-        (self.isbissextile and sof == 2 and heures*1080 + halakim > 16788):
+
+        if heures > 17                                                                             \
+        or (rang in {1,3,4,6,8,9,11,12,14,15,17,19} and sof == 3 and heures*1080 + halakim > 9923) \
+        or (self.isbissextile and sof == 2 and heures*1080 + halakim > 16788):
             sof += 1
+
         sof += sof in {1,4,6}
+
         self.ecart = (sof - roch - 3 - self.isbissextile*2) % 7
 
 
 class Taarikh():
-
     def __init__(self, day:int, month:int, year:int)->None:
         annee = Chana(year)
         if ((year < 0) or (day < 1) or (day > 30)) or \
@@ -141,7 +142,6 @@ class Taarikh():
 
 
 def taarikh_yamim(taarikh:object)->int:
-
     if isinstance(taarikh,tuple):
         taarikh = Taarikh(*taarikh)
 
@@ -166,7 +166,6 @@ def taarikh_yamim(taarikh:object)->int:
 
 
 def yamim_taarikh(jours:int)->Taarikh:
-
     if jours > 0:
         annee = 1
         chana = Chana(annee)
@@ -199,7 +198,6 @@ def yamim_taarikh(jours:int)->Taarikh:
 
 
 def jours_date(jours:int)->tuple:
-
     "Convertit un nombre de jours en une date civile."
 
     if not isinstance(jours,int):
@@ -244,7 +242,6 @@ def jours_date(jours:int)->tuple:
 
 
 def date_jours(date:tuple)->int:
-
     """
     Convertit une date civile en un nombre de jours
     (depuis le 01/01/0001 du calendrier civil Géorgien).
@@ -271,28 +268,9 @@ def date_jours(date:tuple)->int:
 
 
 def convertHC(date:object)->str:
-
     jour, jours, hodashim, annee = jours_date(taarikh_yamim(date)-1373428)
     hodashim = HODASHIM_EZRAHIIM[hodashim-1]
     return f"{jour} {jours} {hodashim} {annee}"
 
-
 def convertCH(date:tuple)->Taarikh:
-
     return yamim_taarikh(date_jours(date) + 1373428)
-
-
-# print()
-# print("4 Janvier 2022 → hebrew:", convertCH((4,1,2022)))
-# print("2 Chevat 5782 → civil:", convertHC((2,5,5782)))
-# print()
-# print("4 Fevrier 2022 → hebrew:", convertCH((4,2,2022)))
-# print("3 adar1 5782 → civil:", convertHC((3,6,5782)))
-# print()
-# print("4 Mars 2022 → hebrew:", convertCH((4,3,2022)))
-# print("1 adar2 5782 → civil:", convertHC((1,7,5782)))
-# print()
-# print("4 Avril 2022 → hebrew:", convertCH((4,4,2022)))
-# print("3 nissan 5782 → civil:", convertHC((3,8,5782)))
-# print("4 Février 2022 → hebrew:", convertCH((4,2,2022)))
-# print("3 adar1 5782 → civil:", convertHC((3,6,5782)))
